@@ -45,19 +45,25 @@ def learn_shakespeare(path, N):
     f = open(path)
     string = f.readline().strip().upper()
     network = LstmNetwork_shakespeare_style(dim_s, dim_x, len(string))
-    network.learn(string_to_sequence(string), string_to_sequence(string[0]), s_prev, h_prev)
+    network.learn(string_to_sequence(string), string_to_sequence(string[0])[0], s_prev, h_prev)
+    
     s_prev = network.cells[-1].s
     h_prev = network.cells[-1].h
 
     for i in range(N):
-        if N%500 == 0:
+        if i%500 == 0:
             network = LstmNetwork_shakespeare_style(dim_s, dim_x, 100)
-            print([onehot_to_letter(network.propagate(string_to_sequence('E'), np.zeros((dim_s,1)),np.zeros((dim_s,1)))[i]) for i in range()])
+            print([onehot_to_letter(network.propagate(string_to_sequence('E')[0], np.zeros((dim_s,1)),np.zeros((dim_s,1)))[i]) for i in range(100)])
         string = f.readline().strip().upper()
-        network = LstmNetwork_shakespeare_style(dim_s, dim_x, len(string))
-        network.learn(string_to_sequence(string), h_prev, s_prev, h_prev)
+        if len(string) !=0:
+            print(i)
+            network = LstmNetwork_shakespeare_style(dim_s, dim_x, len(string))
+            network.learn(string_to_sequence(string), h_prev, s_prev, h_prev)
 
-        s_prev = network.cells[-1].s
-        h_prev = network.cells[-1].h
+            s_prev = network.cells[-1].s
+            h_prev = network.cells[-1].h
 
     f.close()
+
+if __name__ == '__main__':
+    learn_shakespeare('data_shakespeare.txt', 10000)

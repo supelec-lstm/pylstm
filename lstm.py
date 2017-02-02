@@ -142,13 +142,21 @@ def network_test():
     network.learn(np.ones((3,dim_x,1)), np.ones((3,dim_s,1)))   
     print('ok learning')
 
+def network_shakepeare_style_test():
+    network = LstmNetwork_shakespeare_style(dim_x, dim_x, 10)
+    print('ok creation LstmNetwork_shakespeare_style')
 
+    network.propagate(np.ones((dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)))
+    print('ok propagation reseau shakespeare')
+
+    network.learn(np.ones((10,dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)))
+    print('ok learning shakespeare')
 
 if __name__ == '__main__':
 
     cell_test()
     network_test()
-
+    network_shakepeare_style_test()
 
 
 
