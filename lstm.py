@@ -52,9 +52,9 @@ class LstmCell:
     def backpropagate(self, ds, dh, y_true):
         self.dh = dh + cost_function_derivative(self.h, y_true)
 
-        self.weights.dwo += np.dot(self.dh*self.l*self.o*(1-self.o), np.transpose(self.x_concatenated))
+        self.weights.dwo += np.dot(self.dh*self.l*self.o*(1-self.o), self.x_concatenated.T)
 
-        self.ds = ds + self.dh*self.o*(1-self.s**2)
+        self.ds = ds + self.dh*self.o*(1-self.l**2)
 
         self.weights.dwi += np.dot(self.ds*self.g*(1-self.i**2), self.x_concatenated.T)
         self.weights.dwg += np.dot(self.ds*self.i*self.g*(1-self.g), self.x_concatenated.T)
