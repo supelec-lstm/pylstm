@@ -38,13 +38,14 @@ def indice_max(l):
 def learn_shakespeare(path, N):
     dim_x = len(letters)
     dim_s = len(letters)
+    print(len(letters))
     weights = Weights(dim_s, dim_x)
     s_prev = np.zeros((dim_s,1))
     h_prev = np.zeros((dim_s,1))
 
     f = open(path)
     string = f.readline().strip().upper()
-    network = LstmNetwork_shakespeare_style(dim_s, dim_x, len(string))
+    network = LstmNetwork_shakespeare_style(weights, len(string))
     network.learn(string_to_sequence(string), string_to_sequence(string[0])[0], s_prev, h_prev)
     
     s_prev = network.cells[-1].s
@@ -52,12 +53,13 @@ def learn_shakespeare(path, N):
 
     for i in range(N):
         if i%500 == 0:
-            network = LstmNetwork_shakespeare_style(dim_s, dim_x, 100)
+            network = LstmNetwork_shakespeare_style(weights, 100)
+            print(network.propagate(string_to_sequence('E')[0], np.zeros((dim_s,1)),np.zeros((dim_s,1))))
             print([onehot_to_letter(network.propagate(string_to_sequence('E')[0], np.zeros((dim_s,1)),np.zeros((dim_s,1)))[i]) for i in range(100)])
         string = f.readline().strip().upper()
         if len(string) !=0:
             print(i)
-            network = LstmNetwork_shakespeare_style(dim_s, dim_x, len(string))
+            network = LstmNetwork_shakespeare_style(weights, len(string))
             network.learn(string_to_sequence(string), h_prev, s_prev, h_prev)
 
             s_prev = network.cells[-1].s

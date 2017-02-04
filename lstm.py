@@ -2,8 +2,6 @@
 
 import numpy as np
 
-dim_s = 50
-dim_x = 20
 
 class Weights:
     def __init__(self,dim_s, dim_x):
@@ -23,9 +21,9 @@ class Weights:
         self.wi -= learning_rate * self.dwi
         self.wo -= learning_rate * self.dwo
         
-        self.dwg = np.zeros((dim_s, dim_x + dim_s))
-        self.dwi = np.zeros((dim_s, dim_x + dim_s))
-        self.dwo = np.zeros((dim_s, dim_x + dim_s))
+        self.dwg = np.zeros((self.dim_s, self.dim_x + self.dim_s))
+        self.dwi = np.zeros((self.dim_s, self.dim_x + self.dim_s))
+        self.dwo = np.zeros((self.dim_s, self.dim_x + self.dim_s))
         
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
@@ -52,18 +50,18 @@ class LstmCell:
         self.h = self.l * self.o
     
     def backpropagate(self, ds, dh, y_true):
-        self.dh = dh + cost_function_derivative(dh, y_true)
+        self.dh = dh + cost_function_derivative(self.h, y_true)
 
         self.weights.dwo += np.dot(self.dh*self.l*self.o*(1-self.o), np.transpose(self.x_concatenated))
 
         self.ds = ds + self.dh*self.o*(1-self.s**2)
 
-        self.weights.dwi += np.dot(self.ds*self.g*self.i*(1-self.i), np.transpose(self.x_concatenated))
-        self.weights.dwg += np.dot(self.ds*self.i*self.g*(1-self.g), np.transpose(self.x_concatenated))
+        self.weights.dwi += np.dot(self.ds*self.g*(1-self.i**2), self.x_concatenated.T)
+        self.weights.dwg += np.dot(self.ds*self.i*self.g*(1-self.g), self.x_concatenated.T)
 
-        self.dh = np.dot(np.transpose(self.weights.wi), self.ds*self.g*self.i*(1-self.i)) + \
-                np.dot(np.transpose(self.weights.wg), self.ds*self.i*self.g*(1-self.g)) + \
-                np.dot(np.transpose(self.weights.wo), self.dh*self.l*self.o*(1-self.o))
+        self.dh = np.dot(self.weights.wi.T, self.ds*self.g*(1-self.i**2)) + \
+                np.dot(self.weights.wg.T, self.ds*self.i*self.g*(1-self.g)) + \
+                np.dot(self.weights.wo.T, self.dh*self.l*self.o*(1-self.o))
         self.dh = self.dh[:self.weights.dim_s]
 
         return self.ds, self.dh
@@ -94,8 +92,8 @@ class LstmNetwork:
 
 
 class LstmNetwork_shakespeare_style:
-    def __init__(self, dim_s, dim_x, length):
-        self.weights = Weights(dim_s, dim_x)
+    def __init__(self, weights, length):
+        self.weights = weights
         self.cells = [LstmCell(self.weights) for _ in range(length)]
         self.length = length
 
@@ -143,7 +141,8 @@ def network_test():
     print('ok learning')
 
 def network_shakepeare_style_test():
-    network = LstmNetwork_shakespeare_style(dim_x, dim_x, 10)
+    weights = Weights(dim_x, dim_x)
+    network = LstmNetwork_shakespeare_style(weights, 10)
     print('ok creation LstmNetwork_shakespeare_style')
 
     network.propagate(np.ones((dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)))
@@ -153,6 +152,8 @@ def network_shakepeare_style_test():
     print('ok learning shakespeare')
 
 if __name__ == '__main__':
+    dim_s = 50
+    dim_x = 20
 
     cell_test()
     network_test()
