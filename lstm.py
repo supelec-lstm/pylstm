@@ -39,12 +39,12 @@ class LstmCell:
     def __init__(self, weights):
         self.weights = weights
     
-    def propagate(self, s_previous, h_previous, x):
+    def propagate(self, previous_s, previous_h, x):
         self.x = x
-        self.x_concatenated = np.concatenate((h_previous,x), axis=0)
+        self.x_concatenated = np.concatenate((previous_h, x), axis=0)
         self.g = sigmoid(np.dot(self.weights.wg, self.x_concatenated))
         self.i = np.tanh(np.dot(self.weights.wi, self.x_concatenated))
-        self.s = self.g * self.i + s_previous
+        self.s = self.g * self.i + previous_s
         self.o = sigmoid(np.dot(self.weights.wo, self.x_concatenated))
         self.l = np.tanh(self.s)
         self.h = self.l * self.o
@@ -68,45 +68,33 @@ class LstmCell:
 
 
 class LstmNetwork:
-    def __init__(self, dim_s, dim_x, length):
-        self.weights = Weights(dim_s, dim_x)
+    def __init__(self, weights, length):
+        self.weights = weights
         self.cells = [LstmCell(self.weights) for _ in range(length)]
         self.length = length
 
-    def propagate(self, X):
-        self.cells[0].propagate(np.zeros((self.weights.dim_s, 1)), np.zeros((self.weights.dim_s, 1)), X[0])
+    def propagate(self, X, previous_s=None, previous_h=None):
+        previous_s = previous_s or np.zeros((self.weights.dim_s, 1))
+        previous_h = previous_h or np.zeros((self.weights.dim_s, 1))
+        self.cells[0].propagate(previous_s, previous_h, X[0])
 
         for i in range(1,self.length):
             self.cells[i].propagate(self.cells[i-1].s, self.cells[i-1].h, X[i])
 
         return [self.cells[i].h for i in range(self.length)]
 
-    def learn(self, X, Y, learning_rate=0.3):
-        self.propagate(X)
-
-        self.cells[-1].backpropagate(np.zeros((self.weights.dim_s, 1)), np.zeros((self.weights.dim_s, 1)), Y[-1])
-        for i in range(self.length-2, -1, -1):
-            self.cells[i].backpropagate(self.cells[i+1].ds, self.cells[i+1].dh, Y[i])
-
-        self.weights.descend_gradient(learning_rate)
-
-
-class LstmNetwork_shakespeare_style:
-    def __init__(self, weights, length):
-        self.weights = weights
-        self.cells = [LstmCell(self.weights) for _ in range(length)]
-        self.length = length
-
-    def propagate(self, x, s_previous, h_previous):
-        self.cells[0].propagate(s_previous, h_previous, x)
+    def propagate_self_feeding(self, x, previous_s=None, previous_h=None):
+        previous_s = previous_s or np.zeros((self.weights.dim_s, 1))
+        previous_h = previous_h or np.zeros((self.weights.dim_s, 1))
+        self.cells[0].propagate(previous_s, previous_h, x)
 
         for i in range(1,self.length):
             self.cells[i].propagate(self.cells[i-1].s, self.cells[i-1].h, self.cells[i-1].h)
 
         return [self.cells[i].h for i in range(self.length)]
 
-    def learn(self, Y, x, s_previous, h_previous, learning_rate=0.3):
-        self.propagate(x, s_previous, h_previous)
+    def learn(self, X, Y, learning_rate=0.3, previous_s=None, previous_h=None):
+        self.propagate(X, previous_s, previous_h)
 
         self.cells[-1].backpropagate(np.zeros((self.weights.dim_s, 1)), np.zeros((self.weights.dim_s, 1)), Y[-1])
         for i in range(self.length-2, -1, -1):
@@ -140,24 +128,9 @@ def network_test():
     network.learn(np.ones((3,dim_x,1)), np.ones((3,dim_s,1)))   
     print('ok learning')
 
-def network_shakepeare_style_test():
-    weights = Weights(dim_x, dim_x)
-    network = LstmNetwork_shakespeare_style(weights, 10)
-    print('ok creation LstmNetwork_shakespeare_style')
-
-    network.propagate(np.ones((dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)))
-    print('ok propagation reseau shakespeare')
-
-    network.learn(np.ones((10,dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)), np.ones((dim_x,1)))
-    print('ok learning shakespeare')
-
 if __name__ == '__main__':
     dim_s = 50
     dim_x = 20
 
     cell_test()
     network_test()
-    network_shakepeare_style_test()
-
-
-
