@@ -30,7 +30,7 @@ def string_to_sequence(string):
     return sequence
 
 def train_reber(N):
-	weights = Weights(len(letters), len(letters))
+	weights = Weights(len(letters)+10, len(letters), -10)
 	f = open(train_path)
 	for i in range(N):
 		if i % 1000 == 0:
@@ -75,9 +75,9 @@ def test_reber(weights):
 		print(letter, [(l, p[0]) for l, p in zip(letters, y)])
 
 if __name__ == '__main__':
-	#weights = train_reber(100000)
+	weights = train_reber(100000)
 	# Save the weights
-	#pickle.dump(weights, open('reber.pickle', 'wb'))
-	weights = pickle.load(open('reber.pickle', 'rb'))
+	pickle.dump(weights, open('reber.pickle', 'wb'))
+	#weights = pickle.load(open('reber.pickle', 'rb'))
 	print(accuracy(weights, 100000))
 	#test_reber(weights)

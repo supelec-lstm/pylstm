@@ -1,29 +1,35 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pickle
 
 
 class Weights:
-    def __init__(self,dim_s, dim_x):
+    def __init__(self,dim_s, dim_x, dim_sy = 0):      #dim_sy allows the dimension of the output to differ from the dimension of the cell state
         self.dim_x = dim_x
         self.dim_s = dim_s
+        self.dim_sy = dim_sy
         
         self.wg = 0.1 * np.random.randn(dim_s, dim_x + dim_s)
         self.wi = 0.1 * np.random.randn(dim_s, dim_x + dim_s)
         self.wo = 0.1 * np.random.randn(dim_s, dim_x + dim_s)
+        self.wy = 0.1 * np.random.randn(dim_sy + dim_s, dim_s)
         
         self.dwg = np.zeros((dim_s, dim_x + dim_s))
         self.dwi = np.zeros((dim_s, dim_x + dim_s))
         self.dwo = np.zeros((dim_s, dim_x + dim_s))
-        
+        self.dwy = np.zeros((dim_sy + dim_s, dim_s))
+
     def descend_gradient(self, learning_rate=0.3):
         self.wg -= learning_rate * self.dwg
         self.wi -= learning_rate * self.dwi
         self.wo -= learning_rate * self.dwo
+        self.wy -= learning_rate * self.dwy
         
         self.dwg = np.zeros((self.dim_s, self.dim_x + self.dim_s))
         self.dwi = np.zeros((self.dim_s, self.dim_x + self.dim_s))
         self.dwo = np.zeros((self.dim_s, self.dim_x + self.dim_s))
+        self.dwy = np.zeros((self.dim_sy + self.dim_s, self.dim_s))
         
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
@@ -48,9 +54,12 @@ class LstmCell:
         self.o = sigmoid(np.dot(self.weights.wo, self.x_concatenated))
         self.l = np.tanh(self.s)
         self.h = self.l * self.o
+        self.y = sigmoid(np.dot(self.weights.wy, self.h))
     
     def backpropagate(self, ds, dh, y_true):
-        self.dh = dh + cost_function_derivative(self.h, y_true)
+        dJ = cost_function_derivative(self.y, y_true)*self.y*(1-self.y)
+        self.dh = dh + np.dot(self.weights.wy.T, dJ)
+        self.weights.dwy += np.dot(dJ, self.h.T)
 
         self.weights.dwo += np.dot(self.dh*self.l*self.o*(1-self.o), self.x_concatenated.T)
 
@@ -81,7 +90,7 @@ class LstmNetwork:
         for i in range(1,self.length):
             self.cells[i].propagate(self.cells[i-1].s, self.cells[i-1].h, X[i])
 
-        return [self.cells[i].h for i in range(self.length)]
+        return [self.cells[i].y for i in range(self.length)]
 
     def propagate_self_feeding(self, x, previous_s=None, previous_h=None):
         previous_s = previous_s or np.zeros((self.weights.dim_s, 1))
@@ -89,9 +98,8 @@ class LstmNetwork:
         self.cells[0].propagate(previous_s, previous_h, x)
 
         for i in range(1,self.length):
-            self.cells[i].propagate(self.cells[i-1].s, self.cells[i-1].h, self.cells[i-1].h)
-
-        return [self.cells[i].h for i in range(self.length)]
+            self.cells[i].propagate(self.cells[i-1].s, self.cells[i-1].h, self.cells[i-1].y)
+        return [self.cells[i].y for i in range(self.length)]
 
     def learn(self, X, Y, learning_rate=0.3, previous_s=None, previous_h=None):
         self.propagate(X, previous_s, previous_h)

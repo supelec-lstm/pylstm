@@ -4,7 +4,7 @@ from lstm import *
 letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',\
             'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',\
             'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ',\
-            ',', '.', '?', ';', ':', "'", '"', '[', ']',\
+            ',', '.', '?', ';', ':', "'", '"', \
              '-', '(', ')', '&', '!']
 
 letter_to_index = {letter: i for i, letter in enumerate(letters)}
@@ -27,7 +27,7 @@ def sequence_to_string(sequence):
 def learn_shakespeare(path, N):
     dim_x = len(letters)
     dim_s = len(letters)
-    weights = Weights(dim_s, dim_x)
+    weights = Weights(dim_s + 100, dim_x, -100)
     s_prev = np.zeros((dim_s,1))
     h_prev = np.zeros((dim_s,1))
 
@@ -47,7 +47,7 @@ def learn_shakespeare(path, N):
     return weights
 
 def sample(weights, n):
-    s = 'A'
+    s = 'T'
     x = string_to_sequence(s)[0]
     network = LstmNetwork(weights, n)
     result = network.propagate_self_feeding(x)
@@ -55,5 +55,7 @@ def sample(weights, n):
 
 
 if __name__ == '__main__':
-    weights = learn_shakespeare('shakespeare/shakespeare_marc.txt', 10000)
-    sample(weights, 10)
+    #weights = learn_shakespeare('data_shakespeare_karpathy.txt', 40000)
+    #pickle.dump(weights, open('shakespeare_s.pickle', 'wb'))
+    weights = pickle.load(open('shakespeare_s.pickle', 'rb'))
+    sample(weights, 100)
