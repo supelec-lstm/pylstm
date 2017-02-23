@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, '../../reber-grammar/')))
 
 import pickle
+import time
 import matplotlib.pyplot as plt
 import reber
 import symmetrical_reber
@@ -30,17 +31,27 @@ def string_to_sequence(string):
     return sequence
 
 def train_reber(N):
-	weights = Weights(len(letters)+10, len(letters), -10)
+	start_time = time.time()
+	weights = Weights(len(letters)+0, len(letters), len(letters))
 	f = open(train_path)
+	t = []
+	accuracies = []
 	for i in range(N):
 		if i % 1000 == 0:
+			t.append(i)
 			print(i)
-			print(accuracy(weights, 1000))
+			accuracies.append(accuracy(weights, 1000))
+			print(accuracies[-1])
 		string = f.readline().strip()
 		sequence = string_to_sequence(string)
 		network = LstmNetwork(weights, len(sequence)-1)
 		network.learn(sequence[:-1], sequence[1:], learning_rate)
 	f.close()
+	plt.plot(t, accuracies)
+	plt.xlabel('Nombre de chaines')
+	plt.ylabel('Précision')
+	plt.title("Courbe d'apprentissage avec un état caché à {} poids ({:.2f}s)".format(weights.dim_s, time.time() - start_time))
+	plt.show()
 	return weights
 
 def predict_correctly(weights, string, threshold):
@@ -79,5 +90,5 @@ if __name__ == '__main__':
 	# Save the weights
 	pickle.dump(weights, open('reber.pickle', 'wb'))
 	#weights = pickle.load(open('reber.pickle', 'rb'))
-	print(accuracy(weights, 100000))
+	#print(accuracy(weights, 100000))
 	#test_reber(weights)
