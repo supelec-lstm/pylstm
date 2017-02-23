@@ -54,7 +54,7 @@ class LstmCell:
         self.o = sigmoid(np.dot(self.weights.wo, self.x_concatenated))
         self.l = np.tanh(self.s)
         self.h = self.l * self.o
-        self.y = sigmoid(np.dot(self.weights.wy, self.h))
+        self.y = sigmoid(np.dot(self.weights.wy, self.h))     #we should put a softmax here
     
     def backpropagate(self, ds, dh, y_true):
         dJ = cost_function_derivative(self.y, y_true)*self.y*(1-self.y)
@@ -110,6 +110,14 @@ class LstmNetwork:
 
         self.weights.descend_gradient(learning_rate)
 
+    def learn_self_feeding(self, x, Y, learning_rate=0.3, previous_s=None, previous_h=None):
+        self.propagate_self_feeding(x, previous_s, previous_h)
+
+        self.cells[-1].backpropagate(np.zeros((self.weights.dim_s, 1)), np.zeros((self.weights.dim_s, 1)), Y[-1])
+        for i in range(self.length-2, -1, -1):
+            self.cells[i].backpropagate(self.cells[i+1].ds, self.cells[i+1].dh, Y[i])
+
+        self.weights.descend_gradient(learning_rate)
 
 def cell_test():
     weights = Weights(dim_s, dim_x)
